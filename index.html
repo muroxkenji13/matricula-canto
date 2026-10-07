@@ -103,7 +103,7 @@ footer.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
     <div class="eyebrow">Alana Antonietti · Jundiaí/SP</div>
     <h1>Matrícula nas aulas de canto</h1>
     <p class="lede">Preencha seus dados, escolha a modalidade e o mês de início, leia o termo e gere o PDF. Depois é só imprimir, assinar e entregar para a professora.</p>
-    <p class="privacy"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" style="flex:none;margin-top:3px"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span><b>Seus dados não são enviados para lugar nenhum.</b> Eles ficam só no seu navegador e servem apenas para montar o PDF.</span></p>
+    <p class="privacy"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" style="flex:none;margin-top:3px"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span id="privacyText"><b>Seus dados não são enviados para lugar nenhum.</b> Eles ficam só no seu navegador e servem apenas para montar o PDF.</span></p>
   </header>
 
   <form id="form" novalidate>
@@ -184,7 +184,7 @@ footer.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
       <h2 id="s3"><span class="n">3</span>Leia o termo</h2>
       <p class="hint">Toque em cada cláusula para abrir. O texto completo vai no PDF.</p>
       <div id="clauses"></div>
-      <label class="agree" data-f="agree"><input type="checkbox" id="agree"><span>Li o termo e concordo com as condições.</span></label>
+      <label class="agree" data-f="agree"><input type="checkbox" id="agree"><span id="agreeText">Li o termo e concordo com as condições.</span></label>
       <span class="err" id="err-agree"></span>
     </section>
 
@@ -199,6 +199,13 @@ footer.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
 
 <script>
 const YEAR_TERM = "2026";
+/* Endereço do Apps Script da Alana (Implantar > App da Web). Vazio = não envia e-mail. */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwDMXdGE9RLN1-7VgRBRT6qJizUO9UH6Pj2fthNA8A1YMkNN1gZkmBaUtCxF_EaXcWOgg/exec";
+const CAN_SEND = !!ENDPOINT && !(window.claude && typeof window.claude.use === "function");
+if (CAN_SEND) {
+  document.getElementById("privacyText").innerHTML = "<b>Ao gerar o PDF, uma cópia da matrícula é enviada para a professora Alana.</b> Seus dados são usados só para a gestão das aulas, conforme a LGPD.";
+  document.getElementById("agreeText").textContent = "Li o termo, concordo com as condições e autorizo o envio dos meus dados à professora.";
+}
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 /* ---------- Texto do termo (fonte única para a tela e o PDF) ---------- */
@@ -518,6 +525,26 @@ const status = (msg, cls) => { const s = $("status"); s.textContent = msg; s.cla
 let downloadsP = null;
 if (window.claude && typeof window.claude.use === "function") downloadsP = window.claude.use("downloads").catch(() => null);
 
+/* ---------- Aviso por e-mail à professora (via Google Apps Script) ---------- */
+const sentKeys = new Set();
+async function notifyTeacher(d, doc, filename){
+  if (!CAN_SEND) return null;
+  const payload = { ...d, nasc: fmtDate(d.nasc), arquivo: filename,
+    pdf: doc.output("datauristring").split(",")[1] };
+  const key = JSON.stringify({ ...d });
+  if (sentKeys.has(key)) return null;          // não reenvia o mesmo cadastro
+  try {
+    const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    const j = await r.json().catch(() => ({}));
+    if (j.ok) { sentKeys.add(key); return true; }
+    return false;
+  } catch (e) {
+    // Alguns navegadores bloqueiam a leitura da resposta; envia sem confirmação.
+    try { await fetch(ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) }); sentKeys.add(key); return true; }
+    catch (e2) { return false; }
+  }
+}
+
 $("form").addEventListener("submit", async e => {
   e.preventDefault();
   status("");
@@ -534,6 +561,7 @@ $("form").addEventListener("submit", async e => {
   try {
     const doc = buildPDF(d);
     const filename = `Termo Aulas de Canto - ${d.nome.replace(/[\\/:*?"<>|]/g, "")}.pdf`;
+    const sendP = notifyTeacher(d, doc, filename);
     if (downloadsP) {
       const dl = await downloadsP;
       if (!dl) { status("O download não está disponível nesta visualização.", "bad"); return; }
@@ -547,6 +575,9 @@ $("form").addEventListener("submit", async e => {
       doc.save(filename);
       status("PDF gerado. Agora é só imprimir e assinar.", "ok");
     }
+    const sent = await sendP;
+    if (sent === true) status($("status").textContent + " A professora recebeu uma cópia por e-mail.", "ok");
+    else if (sent === false) status($("status").textContent + " Não conseguimos avisar a professora: envie o PDF assinado para ela.", $("status").className);
   } catch (err) {
     console.error(err); status("Algo deu errado ao gerar o PDF. Tente novamente.", "bad");
   } finally { btn.disabled = false; }
