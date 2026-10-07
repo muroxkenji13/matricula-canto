@@ -60,6 +60,13 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .choice input:checked + span{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 .five .choice > span{text-align:center;padding:10px 4px;font-weight:700;font-variant-numeric:tabular-nums}
 
+.booking{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border:1px dashed var(--accent);border-radius:8px;padding:14px;background:var(--accent-soft)}
+.booking-text{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 260px;font-size:14px}
+.booking-text strong{font-size:15px}
+.booking-text span{color:var(--muted)}
+.btn-cal{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;text-decoration:none;background:var(--surface);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:11px 16px;min-height:44px;box-sizing:border-box}
+.btn-cal:hover{background:var(--accent);color:var(--accent-fg)}
+.btn-cal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .note{margin-top:12px;font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 12px}
 .minor-banner{font-size:14px;color:var(--muted);margin:0 0 12px}
 
@@ -139,7 +146,14 @@ footer.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
       <div class="grid" style="margin-top:14px">
         <label class="f" data-f="inicio">Mês de início das aulas<select id="inicio" required></select><span class="err"></span></label>
         <label class="f" id="qtdWrap" data-f="qtd" hidden>Quantidade de aulas do pacote<select id="qtd"><option value="">Selecione</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select><span class="err"></span></label>
-        <label class="f full" data-f="horario">Dia e horário de preferência <span class="opt">(opcional, a confirmar com a professora)</span><input id="horario" type="text" placeholder="Ex.: terças, às 19h"></label>
+        <div class="full booking">
+          <div class="booking-text">
+            <strong>Reserve sua primeira aula</strong>
+            <span>A agenda da professora abre em outra aba e mostra só os horários livres. Depois de reservar, volte aqui e anote o horário abaixo.</span>
+          </div>
+          <a class="btn-cal" href="https://calendar.app.google/zncFW49K3bPUTJgQA" target="_blank" rel="noopener">Escolher meu horário na agenda <span aria-hidden="true">↗</span></a>
+        </div>
+        <label class="f full" data-f="horario">Horário reservado <span class="opt">(se ainda não reservou, deixe em branco)</span><input id="horario" type="text" placeholder="Ex.: terça, 14/10, às 19h"></label>
       </div>
 
       <div style="margin-top:14px">
@@ -443,7 +457,7 @@ function buildPDF(d){
   const modLabel = { avulsa: "Avulsa - R$ 150,00 por aula",
     pacote: `Pacote Especial - ${d.qtd} aulas a R$ 130,00 (total R$ ${(d.qtd*130).toLocaleString("pt-BR",{minimumFractionDigits:2})})`,
     recorrente: "Recorrente (mensal) - R$ 350,00 por mês" }[d.mod];
-  const modRows = [["Modalidade", modLabel], ["Mês de início das aulas", d.inicio], ["Formato", d.fmt], ["Dia e horário", d.horario || "A combinar com a professora"]];
+  const modRows = [["Modalidade", modLabel], ["Mês de início das aulas", d.inicio], ["Formato", d.fmt], ["Horário reservado", d.horario || "A combinar com a professora"]];
   if (d.mod === "recorrente") modRows.push(["Dia de vencimento", `Dia ${d.venc} de cada mês`]);
   fields("MODALIDADE CONTRATADA:", modRows);
 
