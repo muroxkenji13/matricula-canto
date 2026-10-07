@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style></head><body>
+<title>Matrícula nas Aulas de Canto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Layout: coluna única de formulário, com cabeçalho em pentagrama e etapas numeradas (a ordem é real: preencher, ler, gerar) */
+:root{
+  --bg:#f7f4f7; --surface:#ffffff; --fg:#2a2230; --muted:#6c6173; --line:#e3dbe4;
+  --accent:#7a3e6b; --accent-soft:#f1e6ee; --accent-fg:#ffffff; --danger:#b3261e; --ok:#2f6b3a;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#18141a; --surface:#221c25; --fg:#eee7ef; --muted:#a99cad; --line:#3a313e;
+  --accent:#d39ac3; --accent-soft:#33263a; --accent-fg:#1d1420; --danger:#f2867c; --ok:#8fcf98; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#18141a; --surface:#221c25; --fg:#eee7ef; --muted:#a99cad; --line:#3a313e;
+  --accent:#d39ac3; --accent-soft:#33263a; --accent-fg:#1d1420; --danger:#f2867c; --ok:#8fcf98; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+header.hero{position:relative;padding-block:8px 22px;margin-bottom:8px}
+.staff{position:absolute;inset:0 0 auto 0;height:44px;opacity:.5;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 9px)}
+.eyebrow{position:relative;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;padding-top:56px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,40px);line-height:1.1;margin:6px 0 10px;text-wrap:balance}
+.lede{color:var(--muted);max-width:60ch;margin:0}
+.privacy{margin-top:14px;font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+.privacy b{color:var(--fg)}
+
+section.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:18px}
+.step h2{font-family:var(--display);font-weight:500;font-size:21px;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+.step h2 .n{font-size:14px;font-weight:700;color:var(--accent-fg);background:var(--accent);border-radius:99px;min-width:24px;height:24px;display:inline-grid;place-items:center;transform:translateY(-2px)}
+.step .hint{color:var(--muted);font-size:14px;margin:0 0 14px}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.full{grid-column:1/-1}
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:14px;min-width:0}
+label.f .opt{font-weight:400;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=date],select{
+  font:inherit;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px 12px;width:100%;box-sizing:border-box;min-height:44px}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,.choice input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.err{color:var(--danger);font-weight:400;font-size:13px;min-height:0}
+.invalid input,.invalid select{border-color:var(--danger)}
+
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.choices.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.choices.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:560px){.choices{grid-template-columns:1fr}.choices.five{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.choice{position:relative;display:block;cursor:pointer}
+.choice input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.choice > span{display:block;height:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg)}
+.choice strong{display:block;font-size:15px}
+.choice small{display:block;color:var(--muted);font-size:13px;line-height:1.35;margin-top:2px}
+.choice .price{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700;font-size:15px;margin-top:6px;display:block}
+.choice input:checked + span{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.five .choice > span{text-align:center;padding:10px 4px;font-weight:700;font-variant-numeric:tabular-nums}
+
+.note{margin-top:12px;font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 12px}
+.minor-banner{font-size:14px;color:var(--muted);margin:0 0 12px}
+
+details.clause{border-top:1px solid var(--line)}
+details.clause:last-of-type{border-bottom:1px solid var(--line)}
+details.clause summary{cursor:pointer;padding:11px 2px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.clause summary::-webkit-details-marker{display:none}
+details.clause summary::after{content:"+";color:var(--accent);font-weight:700}
+details.clause[open] summary::after{content:"–"}
+details.clause .body{padding:0 2px 12px;font-size:15px;color:var(--fg)}
+details.clause p{margin:0 0 8px}
+details.clause .num{font-weight:700;color:var(--accent);margin-right:4px}
+details.clause ul{margin:0 0 8px;padding-left:22px}
+.cal{width:100%;border-collapse:collapse;font-size:14px}
+.cal td,.cal th{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+.tablebox{overflow-x:auto}
+
+.agree{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-weight:600;cursor:pointer}
+.agree input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+button.primary{font:inherit;font-weight:700;font-size:16px;background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:13px 22px;cursor:pointer;min-height:48px}
+button.primary:hover{filter:brightness(1.07)}
+button.primary[disabled]{opacity:.55;cursor:progress}
+#status{font-size:14px}
+#status.ok{color:var(--ok)} #status.bad{color:var(--danger)}
+footer.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="staff" aria-hidden="true"></div>
+    <div class="eyebrow">Alana Antonietti · Jundiaí/SP</div>
+    <h1>Matrícula nas aulas de canto</h1>
+    <p class="lede">Preencha seus dados, escolha a modalidade e o mês de início, leia o termo e gere o PDF. Depois é só imprimir, assinar e entregar para a professora.</p>
+    <p class="privacy"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" style="flex:none;margin-top:3px"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span><b>Seus dados não são enviados para lugar nenhum.</b> Eles ficam só no seu navegador e servem apenas para montar o PDF.</span></p>
+  </header>
+
+  <form id="form" novalidate>
+    <section class="step" aria-labelledby="s1">
+      <h2 id="s1"><span class="n">1</span>Seus dados</h2>
+      <p class="hint">Como devem aparecer no termo.</p>
+      <div class="grid">
+        <label class="f full" data-f="nome">Nome completo<input id="nome" type="text" autocomplete="name" required><span class="err"></span></label>
+        <label class="f" data-f="cpf">CPF<input id="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required><span class="err"></span></label>
+        <label class="f" data-f="nasc">Data de nascimento<input id="nasc" type="date" required><span class="err"></span></label>
+        <label class="f" data-f="tel">Telefone / WhatsApp<input id="tel" type="tel" inputmode="tel" placeholder="(11) 90000-0000" maxlength="15" autocomplete="tel" required><span class="err"></span></label>
+        <label class="f" data-f="email">E-mail<input id="email" type="email" autocomplete="email" required><span class="err"></span></label>
+        <label class="f full" data-f="end">Endereço completo<input id="end" type="text" autocomplete="street-address" placeholder="Rua, número, bairro, cidade" required><span class="err"></span></label>
+      </div>
+    </section>
+
+    <section class="step" id="respStep" aria-labelledby="s1b" hidden>
+      <h2 id="s1b"><span class="n">1b</span>Responsável legal</h2>
+      <p class="minor-banner">Como o(a) aluno(a) tem menos de 18 anos, o termo também precisa dos dados e da assinatura de um responsável.</p>
+      <div class="grid">
+        <label class="f full" data-f="rnome">Nome completo do responsável<input id="rnome" type="text"><span class="err"></span></label>
+        <label class="f" data-f="rcpf">CPF do responsável<input id="rcpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"><span class="err"></span></label>
+        <label class="f" data-f="rparent">Parentesco<input id="rparent" type="text" placeholder="Mãe, pai, tutor…"><span class="err"></span></label>
+        <label class="f full" data-f="rtel">Telefone / WhatsApp do responsável<input id="rtel" type="tel" inputmode="tel" placeholder="(11) 90000-0000" maxlength="15"><span class="err"></span></label>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="s2">
+      <h2 id="s2"><span class="n">2</span>Aulas</h2>
+      <p class="hint">Aulas individuais de 50 minutos.</p>
+
+      <div class="f" data-f="mod" style="font-weight:600;font-size:14px;margin-bottom:6px">Modalidade</div>
+      <div class="choices" role="radiogroup" aria-label="Modalidade" data-f="mod">
+        <label class="choice"><input type="radio" name="mod" id="mod-avulsa" value="avulsa"><span><strong>Avulsa</strong><small>Sem compromisso mensal. Pagamento antes de cada aula.</small><span class="price">R$ 150,00/aula</span></span></label>
+        <label class="choice"><input type="radio" name="mod" id="mod-pacote" value="pacote"><span><strong>Pacote Especial</strong><small>De 8 a 12 aulas, pagas antecipadamente.</small><span class="price">R$ 130,00/aula</span></span></label>
+        <label class="choice"><input type="radio" name="mod" id="mod-recorrente" value="recorrente"><span><strong>Recorrente</strong><small>Mensalidade fixa, com continuidade ao longo do ano.</small><span class="price">R$ 350,00/mês</span></span></label>
+      </div>
+      <span class="err" id="err-mod"></span>
+
+      <div class="grid" style="margin-top:14px">
+        <label class="f" data-f="inicio">Mês de início das aulas<select id="inicio" required></select><span class="err"></span></label>
+        <label class="f" id="qtdWrap" data-f="qtd" hidden>Quantidade de aulas do pacote<select id="qtd"><option value="">Selecione</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select><span class="err"></span></label>
+        <label class="f full" data-f="horario">Dia e horário de preferência <span class="opt">(opcional, a confirmar com a professora)</span><input id="horario" type="text" placeholder="Ex.: terças, às 19h"></label>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px">Formato</div>
+        <div class="choices two" role="radiogroup" aria-label="Formato">
+          <label class="choice"><input type="radio" name="fmt" id="fmt-pres" value="Presencial"><span><strong>Presencial</strong><small>Exige carteira de vacinação em dia.</small></span></label>
+          <label class="choice"><input type="radio" name="fmt" id="fmt-online" value="Online"><span><strong>Online</strong><small>Exige dois aparelhos: um com câmera e outro para tocar os áudios.</small></span></label>
+        </div>
+        <span class="err" id="err-fmt"></span>
+      </div>
+
+      <div id="vencWrap" style="margin-top:14px" hidden>
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px">Dia de vencimento da mensalidade</div>
+        <div class="choices five" role="radiogroup" aria-label="Dia de vencimento">
+          <label class="choice"><input type="radio" name="venc" id="v5" value="5"><span>5</span></label>
+          <label class="choice"><input type="radio" name="venc" id="v10" value="10"><span>10</span></label>
+          <label class="choice"><input type="radio" name="venc" id="v15" value="15"><span>15</span></label>
+          <label class="choice"><input type="radio" name="venc" id="v20" value="20"><span>20</span></label>
+          <label class="choice"><input type="radio" name="venc" id="v25" value="25"><span>25</span></label>
+        </div>
+        <span class="err" id="err-venc"></span>
+      </div>
+
+      <div class="note" id="modNote" hidden></div>
+    </section>
+
+    <section class="step" aria-labelledby="s3">
+      <h2 id="s3"><span class="n">3</span>Leia o termo</h2>
+      <p class="hint">Toque em cada cláusula para abrir. O texto completo vai no PDF.</p>
+      <div id="clauses"></div>
+      <label class="agree" data-f="agree"><input type="checkbox" id="agree"><span>Li o termo e concordo com as condições.</span></label>
+      <span class="err" id="err-agree"></span>
+    </section>
+
+    <div class="actions">
+      <button type="submit" class="primary" id="gen">Gerar PDF para imprimir</button>
+      <span id="status" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+
+  <footer class="foot">Termo de Adesão às Normas Gerais das Aulas de Canto · Professora Alana Antonietti</footer>
+</div>
+
+<script>
+const YEAR_TERM = "2026";
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+/* ---------- Texto do termo (fonte única para a tela e o PDF) ---------- */
+const CLAUSES = [
+ ["1ª","DO OBJETO E DOS OBJETIVOS",[
+  ["1.1","Este termo tem por objeto a prestação de serviços de aulas individuais de canto pela PROFESSORA ao(à) ALUNO(A), nas condições aqui estabelecidas."],
+  ["1.2","São objetivos deste termo:",[
+   "a) deixar claras, desde o início, as modalidades de aula, os valores e as formas de pagamento;",
+   "b) organizar a agenda da PROFESSORA e dar continuidade ao trabalho pedagógico do(a) ALUNO(A);",
+   "c) definir regras objetivas para faltas, reposições, trocas de formato, recessos e encerramento do vínculo;",
+   "d) proteger os direitos e estabelecer os deveres de ambas as partes, evitando mal-entendidos."]]]],
+ ["2ª","DAS AULAS",[
+  ["2.1","Cada aula tem duração de **50 (cinquenta) minutos** e é realizada em dia e horário previamente agendados entre as partes."],
+  ["2.2","Atrasos do(a) ALUNO(A) não prorrogam o término da aula, que se encerrará no horário originalmente previsto."],
+  ["2.3","Atrasos da PROFESSORA serão compensados na própria aula ou em data combinada entre as partes, sem custo adicional."]]],
+ ["3ª","DAS MODALIDADES E VALORES",[
+  ["3.1","As aulas podem ser contratadas nas seguintes modalidades:",[
+   "a) **Avulsa:** R$ 150,00 por aula, com pagamento antecipado, antes da aula, sem compromisso mensal;",
+   "b) **Pacote Especial:** de 8 a 12 aulas a R$ 130,00 por aula (desconto aproximado de 13%), com pagamento antecipado; as aulas devem ser utilizadas até a última semana de aula do ano letivo vigente;",
+   "c) **Recorrente (mensal):** R$ 350,00 por mês, em 12 parcelas (equivalente a R$ 105,00 por aula), com 40 aulas previstas no ano para quem ingressar no início do ano letivo e controle em planilha. Para quem ingressar ao longo do ano, o valor será recalculado com o desconto das aulas que não forem dadas."]],
+  ["3.2","**Taxa de matrícula (modalidade recorrente):** R$ 25,00, devida para reserva e confirmação da vaga. O valor não é reembolsável. **Alunos que já estão cursando estão isentos dessa taxa.**"],
+  ["3.3","Os valores deste termo são válidos para o ano letivo de 2026 e poderão ser reajustados para o ano seguinte, mediante comunicação prévia."]]],
+ ["4ª","DAS AULAS PRESENCIAIS E ONLINE",[
+  ["4.1","As aulas podem ser presenciais ou online, conforme a opção do(a) ALUNO(A) registrada neste termo. Esta cláusula se aplica a todas as modalidades."],
+  ["4.2","**Aulas presenciais:** pela segurança da PROFESSORA, do(a) ALUNO(A) e dos moradores do local da aula, é exigida a **carteira de vacinação em dia**. O(A) ALUNO(A) que apresentar sintomas de doença contagiosa (como gripe ou resfriado) deverá avisar a PROFESSORA e, sempre que possível, realizar a aula no formato online."],
+  ["4.3","**Aulas online:** é indispensável que o(a) ALUNO(A) tenha acesso a **dois aparelhos**: um com câmera, para participar da aula, e outro com aplicativo de mensagens e reprodução de som, para receber e tocar os áudios enviados pela PROFESSORA. Recomenda-se uma conexão de internet estável."],
+  ["4.4","Falhas de conexão ou de equipamento do(a) ALUNO(A) não geram direito a reposição. Falhas do lado da PROFESSORA que impeçam a aula serão compensadas em data combinada entre as partes."]]],
+ ["5ª","DA TROCA DE FORMATO (PRESENCIAL / ONLINE)",[
+  ["5.1","A troca de formato, ainda que para uma única aula, deve ser solicitada com **no mínimo 24 (vinte e quatro) horas de antecedência** do horário da aula, para permitir a reorganização e a adaptação da aula."],
+  ["5.2","Solicitações feitas fora desse prazo não serão atendidas, e a aula será mantida no formato original. Esta cláusula se aplica a todas as modalidades."]]],
+ ["6ª","DAS FALTAS, CANCELAMENTOS E REPOSIÇÕES",[
+  ["6.1","**Aviso prévio obrigatório:** o(a) ALUNO(A) que não puder comparecer deve avisar a PROFESSORA com **no mínimo 24 (vinte e quatro) horas de antecedência** do horário da aula. Esse prazo permite trocar o horário com outro aluno ou organizar um novo horário para a reposição."],
+  ["6.2","**Modalidades avulsa e pacote:** a falta sem o aviso previsto no item 6.1 será cobrada normalmente (ou descontada do pacote), como aula dada."],
+  ["6.3","**Modalidade recorrente:** somente as faltas avisadas dentro do prazo do item 6.1 dão direito a reposição, observadas as seguintes regras:",[
+   "a) o(a) ALUNO(A) pode ter, **no máximo, 2 (duas) reposições pendentes ao mesmo tempo**; faltas além desse limite, mesmo avisadas, não serão repostas;",
+   "b) a reposição deve ocorrer em **até 3 (três) meses** da data da aula perdida;",
+   "c) a reposição não remarcada dentro desse prazo será considerada **aula dada**;",
+   "d) o **prazo final** para qualquer reposição é a **última semana de aula do ano letivo**. Reposições não são transferidas para o ano seguinte."]],
+  ["6.4","**Exceção por motivo de saúde (todas as modalidades):** em caso de doença, o prazo de 24 horas será dispensado e a reposição garantida, mediante apresentação de atestado ou comprovante."],
+  ["6.5","**Faltas da PROFESSORA:** aulas canceladas pela PROFESSORA serão sempre repostas em data combinada entre as partes, sem custo e sem contar para os limites do item 6.3."]]],
+ ["7ª","DO CALENDÁRIO E DOS RECESSOS",[
+  ["7.1","As aulas seguem o calendário do **Anexo I**. Não há aulas nos feriados e pontos facultativos ali indicados."],
+  ["7.2","**Recessos:** em janeiro há apenas 1 (uma) semana de aula; em julho, 2 (duas) semanas de recesso; e, em dezembro, apenas 1 (uma) semana de aula."],
+  ["7.3","A previsão de 40 aulas anuais da modalidade recorrente já considera os recessos e os feriados. Por isso, aulas que coincidirem com essas datas não são repostas."]]],
+ ["8ª","DOS PAGAMENTOS",[
+  ["8.1","O(A) ALUNO(A) da modalidade recorrente escolhe, no ato da matrícula, o **dia de vencimento** da mensalidade entre as opções: **dias 5, 10, 15, 20 ou 25** de cada mês."],
+  ["8.2","O pagamento deve ser feito **dentro do mês de referência** e **até a data de vencimento escolhida**. Como a data é de livre escolha do(a) ALUNO(A), é sua responsabilidade não atrasar o pagamento."],
+  ["8.3","Em caso de atraso, incidirão **multa de 2% (dois por cento)** e **juros de 1% (um por cento) ao mês**, proporcionais aos dias de atraso. Atrasos superiores a **15 (quinze) dias** poderão levar à suspensão das aulas até a regularização, e as aulas não realizadas nesse período não serão repostas."],
+  ["8.4","Aulas avulsas e pacotes são pagos antecipadamente, conforme a Cláusula 3ª."],
+  ["8.5","Os pagamentos devem ser feitos por PIX, depósito ou transferência para a conta abaixo, com envio do comprovante à PROFESSORA: **Titular:** Alana Antonietti · **Banco:** Itaú · **Agência:** 0796 · **Conta corrente:** 37660-6 · **CPF e chave PIX:** 419.417.188-84."]]],
+ ["9ª","DA VIGÊNCIA E DO ENCERRAMENTO",[
+  ["9.1","Este termo vale para o ano letivo de 2026, até a última semana de aula prevista no Anexo I."],
+  ["9.2","Na modalidade recorrente, qualquer das partes pode encerrar o vínculo mediante **aviso prévio por escrito de 30 (trinta) dias** (WhatsApp ou e-mail). A mensalidade do período de aviso é devida, e as aulas desse período serão ministradas normalmente."],
+  ["9.3","No encerramento, será feito o acerto de contas: as aulas efetivamente dadas são calculadas a R$ 105,00 cada e comparadas com o total pago. Eventual diferença será paga pelo(a) ALUNO(A) ou devolvida pela PROFESSORA, conforme o caso, em até 15 (quinze) dias."],
+  ["9.4","Pacotes e aulas avulsas já pagos e não utilizados no prazo do item 6.3, \"d\", não são reembolsáveis, exceto quando o encerramento partir da PROFESSORA, caso em que as aulas não dadas serão devolvidas."]]],
+ ["10ª","DA SAÚDE VOCAL",[
+  ["10.1","O(A) ALUNO(A) deve informar à PROFESSORA qualquer condição de saúde que possa afetar a voz ou a prática do canto."],
+  ["10.2","As aulas de canto têm finalidade artística e pedagógica e **não substituem acompanhamento médico ou fonoaudiológico**. Sempre que julgar necessário, a PROFESSORA poderá recomendar avaliação por profissional de saúde."]]],
+ ["11ª","DO USO DE IMAGEM, MATERIAIS E DADOS PESSOAIS",[
+  ["11.1","Gravações de áudio ou vídeo das aulas só podem ser feitas com a concordância de ambas as partes e destinam-se exclusivamente ao estudo pessoal do(a) ALUNO(A)."],
+  ["11.2","Os materiais didáticos fornecidos pela PROFESSORA (áudios, partituras, exercícios) são de uso pessoal do(a) ALUNO(A) e não podem ser compartilhados ou divulgados sem autorização."],
+  ["11.3","A imagem e a voz do(a) ALUNO(A) só serão usadas pela PROFESSORA em redes sociais ou divulgação mediante autorização específica e por escrito."],
+  ["11.4","Os dados pessoais informados neste termo serão usados exclusivamente para a gestão das aulas e da relação entre as partes, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."]]],
+ ["12ª","DO ALUNO MENOR DE IDADE",[
+  ["12.1","Quando o(a) ALUNO(A) for menor de 18 anos, este termo deve ser assinado também pelo responsável legal, que responde pelas obrigações aqui previstas, inclusive as financeiras."]]],
+ ["13ª","DAS DISPOSIÇÕES GERAIS",[
+  ["13.1","As comunicações entre as partes (avisos de falta, trocas de formato, encerramento) devem ser feitas por escrito, via WhatsApp ou e-mail, valendo o horário de envio da mensagem para a contagem dos prazos."],
+  ["13.2","Os casos não previstos neste termo serão resolvidos de comum acordo entre as partes."],
+  ["13.3","Fica eleito o foro da Comarca de Jundiaí/SP para dirimir eventuais questões decorrentes deste termo."]]]
+];
+const CAL = {
+  periodo:[["1º semestre","24/01 a 15/07"],["2º semestre","01/08 a 09/12"]],
+  s1:["Fevereiro: Carnaval - 16 (seg) e 17 (ter); Quarta-feira de Cinzas - 18 (qua)","Abril: Quinta-feira Santa - 02 (qui); Sexta-feira Santa - 03 (sex); Tiradentes - 21 (ter)","Maio: Dia do Trabalho - 01 (sex)","Junho: Corpus Christi - 04 (qui)","Julho: Revolução Constitucionalista (SP) - 09 (qui)"],
+  s2:["Agosto: Padroeira de Jundiaí - 15 (sáb)","Setembro: Independência - 07 (seg)","Outubro: Padroeira do Brasil - 12 (seg)","Novembro: Finados - 02 (seg); Proclamação da República - 15 (dom); Consciência Negra - 20 (sex)"],
+  recessos:"Janeiro: apenas 1 semana de aula; julho: 2 semanas de recesso; dezembro: apenas 1 semana de aula."
+};
+
+/* ---------- Render do termo na tela ---------- */
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+(function renderClauses(){
+  const box = document.getElementById("clauses");
+  let html = "";
+  for (const [n, t, subs] of CLAUSES) {
+    html += `<details class="clause"><summary>Cláusula ${n} · ${esc(t.charAt(0)+t.slice(1).toLowerCase())}</summary><div class="body">`;
+    for (const [num, txt, items] of subs) {
+      html += `<p><span class="num">${num}</span>${md(txt)}</p>`;
+      if (items) html += "<ul>" + items.map(i => `<li>${md(i)}</li>`).join("") + "</ul>";
+    }
+    html += "</div></details>";
+  }
+  html += `<details class="clause"><summary>Anexo I · Calendário ${YEAR_TERM}</summary><div class="body"><div class="tablebox"><table class="cal">
+    <tr><th>1º semestre: ${CAL.periodo[0][1]}</th><th>2º semestre: ${CAL.periodo[1][1]}</th></tr>
+    <tr><td>${CAL.s1.map(esc).join("<br>")}</td><td>${CAL.s2.map(esc).join("<br>")}</td></tr></table></div>
+    <p style="margin-top:8px"><strong>Recessos:</strong> ${esc(CAL.recessos)}</p></div></details>`;
+  box.innerHTML = html;
+})();
+
+/* ---------- Mês de início ---------- */
+(function fillMonths(){
+  const sel = document.getElementById("inicio");
+  const now = new Date();
+  let opts = '<option value="">Selecione o mês</option>';
+  for (let i = 0; i < 13; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const v = `${MESES[d.getMonth()]}/${d.getFullYear()}`;
+    opts += `<option value="${v}">${v}</option>`;
+  }
+  sel.innerHTML = opts;
+})();
+
+/* ---------- Máscaras e validação ---------- */
+const $ = id => document.getElementById(id);
+const digits = s => (s || "").replace(/\D/g, "");
+function maskCPF(v){ v = digits(v).slice(0,11);
+  return v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2"); }
+function maskTel(v){ v = digits(v).slice(0,11);
+  if (v.length <= 2) return v.length ? "(" + v : v;
+  if (v.length <= 6) return `(${v.slice(0,2)}) ${v.slice(2)}`;
+  if (v.length <= 10) return `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
+  return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`; }
+function validCPF(c){ c = digits(c); if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  for (const t of [9,10]) { let s = 0; for (let i = 0; i < t; i++) s += +c[i] * (t + 1 - i);
+    const r = (s * 10) % 11 % 10; if (r !== +c[t]) return false; } return true; }
+["cpf","rcpf"].forEach(id => $(id).addEventListener("input", e => e.target.value = maskCPF(e.target.value)));
+["tel","rtel"].forEach(id => $(id).addEventListener("input", e => e.target.value = maskTel(e.target.value)));
+
+function age(iso){ if (!iso) return null; const b = new Date(iso + "T12:00:00"), n = new Date();
+  let a = n.getFullYear() - b.getFullYear(); const m = n.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return a; }
+const isMinor = () => { const a = age($("nasc").value); return a !== null && a < 18; };
+const radio = name => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
+
+function refresh(){
+  $("respStep").hidden = !isMinor();
+  const mod = radio("mod");
+  $("qtdWrap").hidden = mod !== "pacote";
+  $("vencWrap").hidden = mod !== "recorrente";
+  const note = $("modNote"), ini = $("inicio").value;
+  if (mod === "recorrente") {
+    note.hidden = false;
+    note.innerHTML = `Taxa de matrícula de <strong>R$ 25,00</strong> para novos alunos.` +
+      (ini ? ` Como você começa em <strong>${esc(ini)}</strong>, as aulas anteriores não são cobradas: a professora confirma o valor final com você.` : "");
+  } else if (mod === "pacote") {
+    const q = +$("qtd").value;
+    note.hidden = !q;
+    if (q) note.innerHTML = `Pacote de ${q} aulas: <strong>R$ ${(q*130).toLocaleString("pt-BR",{minimumFractionDigits:2})}</strong>, pagos antecipadamente.`;
+  } else note.hidden = true;
+}
+document.getElementById("form").addEventListener("input", refresh);
+document.getElementById("form").addEventListener("change", refresh);
+
+function setErr(key, msg){
+  const lab = document.querySelector(`label.f[data-f="${key}"]`);
+  const span = lab ? lab.querySelector(".err") : $("err-" + key);
+  if (lab) lab.classList.toggle("invalid", !!msg);
+  if (span) span.textContent = msg || "";
+  return !msg;
+}
+function validate(){
+  let ok = true, first = null;
+  const chk = (key, cond, msg, el) => { const good = setErr(key, cond ? "" : msg); if (!good) { ok = false; first = first || el; } };
+  chk("nome", $("nome").value.trim().split(/\s+/).length >= 2, "Informe o nome completo.", $("nome"));
+  chk("cpf", validCPF($("cpf").value), "CPF inválido. Confira os números.", $("cpf"));
+  const a = age($("nasc").value);
+  chk("nasc", a !== null && a >= 3 && a < 110, "Informe uma data de nascimento válida.", $("nasc"));
+  chk("tel", digits($("tel").value).length >= 10, "Informe o telefone com DDD.", $("tel"));
+  chk("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("email").value.trim()), "Informe um e-mail válido.", $("email"));
+  chk("end", $("end").value.trim().length >= 8, "Informe o endereço completo.", $("end"));
+  if (isMinor()) {
+    chk("rnome", $("rnome").value.trim().split(/\s+/).length >= 2, "Informe o nome completo do responsável.", $("rnome"));
+    chk("rcpf", validCPF($("rcpf").value), "CPF do responsável inválido.", $("rcpf"));
+    chk("rparent", $("rparent").value.trim().length >= 2, "Informe o parentesco.", $("rparent"));
+    chk("rtel", digits($("rtel").value).length >= 10, "Informe o telefone com DDD.", $("rtel"));
+  }
+  const mod = radio("mod");
+  chk("mod", !!mod, "Escolha uma modalidade.", $("mod-avulsa"));
+  chk("inicio", !!$("inicio").value, "Escolha o mês de início.", $("inicio"));
+  if (mod === "pacote") chk("qtd", !!$("qtd").value, "Escolha a quantidade de aulas.", $("qtd"));
+  chk("fmt", !!radio("fmt"), "Escolha o formato.", $("fmt-pres"));
+  if (mod === "recorrente") chk("venc", !!radio("venc"), "Escolha o dia de vencimento.", $("v5"));
+  chk("agree", $("agree").checked, "Marque que leu e concorda com o termo.", $("agree"));
+  if (first) { first.scrollIntoView({behavior:"smooth", block:"center"}); first.focus({preventScroll:true}); }
+  return ok;
+}
+
+/* ---------- PDF ---------- */
+const clean = s => s.replace(/\*\*/g, "").replace(/[–—]/g, "-").replace(/[“”]/g, '"').replace(/·/g, "|").replace(/↔/g, "/");
+function fmtDate(iso){ const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; }
+
+function buildPDF(d){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const M = 18, W = 210 - 2*M, TOP = 18, BOTTOM = 280;
+  const PLUM = [122,62,107], INK = [35,30,40], GREY = [110,100,115], FILL = [246,240,244], LINE = [200,190,200];
+  let y = TOP;
+  const lh = s => s * 0.3528 * 1.38;
+  const ensure = h => { if (y + h > BOTTOM) { doc.addPage(); y = TOP; } };
+  const font = (size, bold, color) => { doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size); doc.setTextColor(...(color || INK)); };
+
+  function text(txt, { x = M, w = W, size = 9.5, bold = false, color = INK, gap = 1.6, align = "justify" } = {}) {
+    font(size, bold, color);
+    const lines = doc.splitTextToSize(clean(txt), w);
+    lines.forEach((ln, i) => {
+      ensure(lh(size));
+      const last = i === lines.length - 1;
+      if (align === "center") doc.text(ln, x + w/2, y + lh(size)*0.75, { align: "center" });
+      else if (align === "justify" && !last) doc.text(ln, x, y + lh(size)*0.75, { align: "justify", maxWidth: w });
+      else doc.text(ln, x, y + lh(size)*0.75);
+      y += lh(size);
+    });
+    y += gap;
+  }
+  function numbered(num, txt, indent = 0, hang = 10) {
+    ensure(lh(9.5) * 2);
+    font(9.5, true, PLUM); doc.text(num, M + indent, y + lh(9.5)*0.75);
+    text(txt, { x: M + indent + hang, w: W - indent - hang });
+  }
+  function heading(t){
+    ensure(14); y += 3;
+    font(10.5, true, PLUM); doc.text(clean(t), M, y + 4);
+    y += 6; doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.line(M, y, M + W, y); y += 2.5;
+  }
+  function fields(title, rows){
+    ensure(10 + rows.length * 7);
+    font(9.5, true); doc.text(title, M, y + 3.5); y += 5.5;
+    const LW = 50;
+    for (const [label, value] of rows) {
+      font(9.5, false);
+      const lines = doc.splitTextToSize(clean(value || "-"), W - LW - 4);
+      const h = Math.max(7, lines.length * lh(9.5) + 3);
+      ensure(h);
+      doc.setFillColor(...FILL); doc.setDrawColor(...LINE); doc.setLineWidth(0.25);
+      doc.rect(M, y, LW, h, "FD"); doc.rect(M + LW, y, W - LW, h, "S");
+      font(9, true); doc.text(label, M + 2, y + 4.6);
+      font(9.5, false); doc.text(lines, M + LW + 2, y + 4.6);
+      y += h;
+    }
+    y += 4;
+  }
+
+  // Cabeçalho
+  font(15, true, PLUM);
+  doc.text("TERMO DE ADESÃO ÀS NORMAS GERAIS", 105, y + 5, { align: "center" }); y += 7;
+  doc.text(`DAS AULAS DE CANTO - ${YEAR_TERM}`, 105, y + 5, { align: "center" }); y += 8;
+  font(10, false, GREY); doc.text("Professora Alana Antonietti  |  Jundiaí/SP", 105, y + 3.5, { align: "center" }); y += 10;
+
+  text("Pelo presente instrumento, as partes abaixo identificadas estabelecem as condições que regem a prestação de serviços de aulas de canto, que passam a valer a partir da assinatura deste termo.", { gap: 3 });
+  text("PROFESSORA: Alana Antonietti, CPF nº 419.417.188-84, doravante denominada PROFESSORA.", { gap: 4 });
+
+  fields("ALUNO(A), doravante denominado(a) ALUNO(A):", [
+    ["Nome completo", d.nome], ["CPF", d.cpf], ["Data de nascimento", fmtDate(d.nasc)],
+    ["Telefone / WhatsApp", d.tel], ["E-mail", d.email], ["Endereço", d.end]]);
+  if (d.minor) fields("RESPONSÁVEL LEGAL (aluno(a) menor de 18 anos):", [
+    ["Nome completo", d.rnome], ["CPF", d.rcpf], ["Parentesco", d.rparent], ["Telefone / WhatsApp", d.rtel]]);
+  const modLabel = { avulsa: "Avulsa - R$ 150,00 por aula",
+    pacote: `Pacote Especial - ${d.qtd} aulas a R$ 130,00 (total R$ ${(d.qtd*130).toLocaleString("pt-BR",{minimumFractionDigits:2})})`,
+    recorrente: "Recorrente (mensal) - R$ 350,00 por mês" }[d.mod];
+  const modRows = [["Modalidade", modLabel], ["Mês de início das aulas", d.inicio], ["Formato", d.fmt], ["Dia e horário", d.horario || "A combinar com a professora"]];
+  if (d.mod === "recorrente") modRows.push(["Dia de vencimento", `Dia ${d.venc} de cada mês`]);
+  fields("MODALIDADE CONTRATADA:", modRows);
+
+  // Cláusulas
+  for (const [n, t, subs] of CLAUSES) {
+    heading(`CLÁUSULA ${n} - ${t}`);
+    for (const [num, txt, items] of subs) {
+      numbered(num, txt);
+      if (items) for (const it of items) { const m = it.match(/^([a-z]\))\s(.*)$/); numbered(m[1], m[2], 10, 7); }
+    }
+  }
+
+  // Termo de ciência + assinaturas
+  if (y + 95 > BOTTOM) { doc.addPage(); y = TOP; } else y += 6;
+  font(11.5, true, PLUM); doc.text("TERMO DE CIÊNCIA E CONCORDÂNCIA", 105, y + 4, { align: "center" }); y += 10;
+  text(`Declaro que recebi uma cópia deste Termo de Adesão às Normas Gerais das Aulas de Canto - ${YEAR_TERM}, que li todas as suas cláusulas e que estou ciente e de acordo com as condições nele estabelecidas.`, { gap: 6 });
+  text("Jundiaí, _____ de ___________________________ de ________.", { align: "center", gap: 18 });
+  const sig = (x, w, name, role) => {
+    doc.setDrawColor(...INK); doc.setLineWidth(0.3); doc.line(x, y, x + w, y);
+    font(9, true); doc.text(clean(name), x + w/2, y + 4.5, { align: "center", maxWidth: w });
+    font(8, false, GREY); doc.text(role, x + w/2, y + 8.5, { align: "center" });
+  };
+  const cw = (W - 12) / 2;
+  if (d.minor) {
+    sig(M, cw, d.nome.toUpperCase(), "Aluno(a)");
+    sig(M + cw + 12, cw, d.rnome.toUpperCase(), "Responsável legal");
+    y += 26; sig(M + (W - cw)/2, cw, "ALANA ANTONIETTI", "Professora");
+  } else {
+    sig(M, cw, d.nome.toUpperCase(), "Aluno(a)");
+    sig(M + cw + 12, cw, "ALANA ANTONIETTI", "Professora");
+  }
+
+  // Anexo I
+  doc.addPage(); y = TOP;
+  font(13, true, PLUM); doc.text(`ANEXO I - CALENDÁRIO ${YEAR_TERM}`, 105, y + 5, { align: "center" }); y += 13;
+  font(9.5, true); doc.text(`Período de aulas: 1º semestre ${CAL.periodo[0][1]}  |  2º semestre ${CAL.periodo[1][1]}`, M, y); y += 8;
+  font(9.5, true); doc.text("Feriados e pontos facultativos (sem aula):", M, y); y += 5;
+  const colW = (W - 6) / 2, startY = y;
+  let y1 = y, y2 = y;
+  font(9.5, false);
+  for (const s of CAL.s1) { const l = doc.splitTextToSize(clean(s), colW - 4); doc.text(l, M + 2, y1 + 4); y1 += l.length * lh(9.5) + 1.5; }
+  for (const s of CAL.s2) { const l = doc.splitTextToSize(clean(s), colW - 4); doc.text(l, M + colW + 8, y2 + 4); y2 += l.length * lh(9.5) + 1.5; }
+  y = Math.max(y1, y2) + 3;
+  doc.setDrawColor(...LINE); doc.rect(M, startY - 1, colW, y - startY + 1); doc.rect(M + colW + 6, startY - 1, colW, y - startY + 1);
+  y += 6; text("Recessos: " + CAL.recessos);
+
+  // Rodapé
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); font(7.5, false, GREY);
+    doc.text(`Normas Gerais das Aulas de Canto ${YEAR_TERM} - Alana Antonietti  |  Página ${i} de ${n}      Rubrica: ________`, 105, 289, { align: "center" });
+  }
+  return doc;
+}
+
+/* ---------- Envio ---------- */
+const status = (msg, cls) => { const s = $("status"); s.textContent = msg; s.className = cls || ""; };
+let downloadsP = null;
+if (window.claude && typeof window.claude.use === "function") downloadsP = window.claude.use("downloads").catch(() => null);
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  status("");
+  if (!validate()) { status("Revise os campos destacados.", "bad"); return; }
+  if (!window.jspdf) { status("Não foi possível carregar o gerador de PDF. Verifique a internet e recarregue a página.", "bad"); return; }
+  const d = {
+    nome: $("nome").value.trim(), cpf: $("cpf").value, nasc: $("nasc").value, tel: $("tel").value,
+    email: $("email").value.trim(), end: $("end").value.trim(), minor: isMinor(),
+    rnome: $("rnome").value.trim(), rcpf: $("rcpf").value, rparent: $("rparent").value.trim(), rtel: $("rtel").value,
+    mod: radio("mod"), qtd: +$("qtd").value || 0, inicio: $("inicio").value, fmt: radio("fmt"),
+    venc: radio("venc"), horario: $("horario").value.trim()
+  };
+  const btn = $("gen"); btn.disabled = true;
+  try {
+    const doc = buildPDF(d);
+    const filename = `Termo Aulas de Canto - ${d.nome.replace(/[\\/:*?"<>|]/g, "")}.pdf`;
+    if (downloadsP) {
+      const dl = await downloadsP;
+      if (!dl) { status("O download não está disponível nesta visualização.", "bad"); return; }
+      try { await dl.save({ filename, data: doc.output("blob") }); status("PDF salvo. Agora é só imprimir e assinar.", "ok"); }
+      catch (err) {
+        if (err && err.code === "declined") status("Download cancelado. Clique de novo quando quiser salvar.", "");
+        else if (err && err.code === "rate_limited") status("Já existe um download aguardando confirmação.", "");
+        else status("O download não está disponível nesta visualização.", "bad");
+      }
+    } else {
+      doc.save(filename);
+      status("PDF gerado. Agora é só imprimir e assinar.", "ok");
+    }
+  } catch (err) {
+    console.error(err); status("Algo deu errado ao gerar o PDF. Tente novamente.", "bad");
+  } finally { btn.disabled = false; }
+});
+refresh();
+</script>
+
+</body></html>
